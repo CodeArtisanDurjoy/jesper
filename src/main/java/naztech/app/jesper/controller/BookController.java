@@ -23,9 +23,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import naztech.app.jesper.dto.BookDTO;
 import naztech.app.jesper.service.BookService;
+import naztech.app.jesper.service.impl.FileStorageService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -33,19 +36,34 @@ import java.util.List;
 @RequestMapping("/api/books")
 @Tag(name = "Book", description = "Book Management APIs")
 public class BookController {
-    private final BookService bookService;
 
-    public BookController(BookService bookService) {
+    private final BookService bookService;
+    private final FileStorageService fileStorageService;
+
+
+    public BookController(BookService bookService, FileStorageService fileStorageService) {
         this.bookService = bookService;
+        this.fileStorageService = fileStorageService;
     }
-    @PostMapping
+
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create a new book", description = "Creates a new book in the system")
     public ResponseEntity<BookDTO> createBook(
-            @Valid @RequestBody BookDTO bookDTO
+            @RequestPart("book") @Valid BookDTO bookDTO,
+            @RequestPart(value = "coverImage", required = false) MultipartFile coverImage
     ) {
+        if (coverImage != null) {
+            String fileName = fileStorageService.storeFile(coverImage);
+            bookDTO.setCoverImage(fileName);
+        }
         BookDTO createdBook = bookService.createBook(bookDTO);
         return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
     }
+
+
+
+
 
     @GetMapping("/{id}")
     @Operation(summary = "Get book by ID", description = "Retrieves a book by its unique identifier")
@@ -63,15 +81,23 @@ public class BookController {
         return ResponseEntity.ok(books);
     }
 
-    @PutMapping("/{id}")
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Update book", description = "Updates an existing book")
     public ResponseEntity<BookDTO> updateBook(
             @PathVariable Long id,
-            @Valid @RequestBody BookDTO bookDTO
+            @RequestPart("book") @Valid BookDTO bookDTO,
+            @RequestPart(value = "coverImage", required = false) MultipartFile coverImage
     ) {
+        if (coverImage != null) {
+            String fileName = fileStorageService.storeFile(coverImage);
+            bookDTO.setCoverImage(fileName);
+        }
         BookDTO updatedBook = bookService.updateBook(id, bookDTO);
         return ResponseEntity.ok(updatedBook);
     }
+
+
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete book", description = "Deletes a book by its ID")
