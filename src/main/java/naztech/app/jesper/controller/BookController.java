@@ -18,6 +18,8 @@ package naztech.app.jesper.controller;/*
  * ==============================================================
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -47,22 +49,39 @@ public class BookController {
     }
 
 
+//    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    @Operation(summary = "Create a new book", description = "Creates a new book in the system")
+//    // For multipart form data requests
+//    public ResponseEntity<BookDTO> createBookWithImage(
+//            @RequestPart(value = "bookData") @Valid BookDTO bookDTO,
+//            @RequestPart(value = "coverImage", required = false) MultipartFile coverImage
+//    ) {
+//        if (coverImage != null && !coverImage.isEmpty()) {
+//            String fileName = fileStorageService.storeFile(coverImage);
+//            bookDTO.setCoverImage(fileName);
+//        }
+//        BookDTO createdBook = bookService.createBook(bookDTO);
+//        return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
+//    }
+
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create a new book", description = "Creates a new book in the system")
     public ResponseEntity<BookDTO> createBook(
-            @RequestPart("book") @Valid BookDTO bookDTO,
+            @RequestPart("bookData") String bookDataJson,
             @RequestPart(value = "coverImage", required = false) MultipartFile coverImage
-    ) {
-        if (coverImage != null) {
+    ) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        BookDTO bookDTO = mapper.readValue(bookDataJson, BookDTO.class);
+
+        if (coverImage != null && !coverImage.isEmpty()) {
             String fileName = fileStorageService.storeFile(coverImage);
             bookDTO.setCoverImage(fileName);
         }
+
         BookDTO createdBook = bookService.createBook(bookDTO);
         return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
+
     }
-
-
-
 
 
     @GetMapping("/{id}")
