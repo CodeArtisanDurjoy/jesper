@@ -18,10 +18,12 @@ package naztech.app.jesper.apiDefination;/*
  * ==============================================================
  */
 
+import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.servers.Server;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
@@ -38,7 +40,19 @@ import org.springframework.context.annotation.Configuration;
                         name = "Apache 2.0",
                         url = "http://www.apache.org/licenses/LICENSE-2.0.html"
                 )
-        )
+
+
+
+        ),
+servers = {
+@Server(url = "${api.server.url:http://localhost:8080}", description = "Local Server"),
+@Server(url = "${api.prod.server.url:https://api.bookreader.com}", description = "Production Server")
+        },
+externalDocs = @ExternalDocumentation(
+        description = "More API Documentation",
+        url = "${api.externalDocs.url:https://docs.bookreader.com}"
+)
+
 )
 public class OpenAPIConfig {
 

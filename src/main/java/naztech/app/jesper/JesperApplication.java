@@ -12,5 +12,8 @@ public class JesperApplication  {
     public static void main(String[] args) {
         SpringApplication.run(JesperApplication.class, args);
     }
-
+    @GetMapping("/ok")
+    public String hello(){
+        return "Hello World";
+    }
 }
