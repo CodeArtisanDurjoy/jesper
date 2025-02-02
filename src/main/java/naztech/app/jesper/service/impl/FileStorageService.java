@@ -1,6 +1,8 @@
 package naztech.app.jesper.service.impl;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,6 +59,20 @@ public class FileStorageService {
             return fileName;
         } catch (IOException e) {
             throw new RuntimeException("Could not store file", e);
+        }
+    }
+    public Resource loadFileAsResource(String filename) {
+        try {
+            Path filePath = Path.of(uploadDir).resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            } else {
+                throw new RuntimeException("File not found: " + filename);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("File reading error", e);
         }
     }
 }

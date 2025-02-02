@@ -40,14 +40,14 @@ public class AuditController {
         this.auditService = auditService;
     }
 
-    @PostMapping
-    @Operation(summary = "Create a new audit record", description = "Creates a new audit record in the system")
-    public ResponseEntity<AuditDTO> createAudit(
-            @Valid @RequestBody AuditDTO auditDTO
-    ) {
-        AuditDTO createdAudit = auditService.createAudit(auditDTO);
-        return new ResponseEntity<>(createdAudit, HttpStatus.CREATED);
-    }
+//    @PostMapping
+//    @Operation(summary = "Create a new audit record", description = "Creates a new audit record in the system")
+//    public ResponseEntity<AuditDTO> createAudit(
+//            @Valid @RequestBody AuditDTO auditDTO
+//    ) {
+//        AuditDTO createdAudit = auditService.createAudit(auditDTO);
+//        return new ResponseEntity<>(createdAudit, HttpStatus.CREATED);
+//    }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get audit record by ID", description = "Retrieves an audit record by its unique identifier")
@@ -65,12 +65,12 @@ public class AuditController {
         return ResponseEntity.ok(audits);
     }
 
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete audit record", description = "Deletes an audit record by its ID")
-    public ResponseEntity<Void> deleteAudit(
-            @PathVariable Long id
-    ) {
-        auditService.deleteAudit(id);
-        return ResponseEntity.noContent().build();
-    }
+//    @DeleteMapping("/{id}")
+//    @Operation(summary = "Delete audit record", description = "Deletes an audit record by its ID")
+//    public ResponseEntity<Void> deleteAudit(
+//            @PathVariable Long id
+//    ) {
+//        auditService.deleteAudit(id);
+//        return ResponseEntity.noContent().build();
+//    }
 }

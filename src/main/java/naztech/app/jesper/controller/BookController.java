@@ -31,6 +31,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -48,21 +49,6 @@ public class BookController {
         this.fileStorageService = fileStorageService;
     }
 
-
-//    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//    @Operation(summary = "Create a new book", description = "Creates a new book in the system")
-//    // For multipart form data requests
-//    public ResponseEntity<BookDTO> createBookWithImage(
-//            @RequestPart(value = "bookData") @Valid BookDTO bookDTO,
-//            @RequestPart(value = "coverImage", required = false) MultipartFile coverImage
-//    ) {
-//        if (coverImage != null && !coverImage.isEmpty()) {
-//            String fileName = fileStorageService.storeFile(coverImage);
-//            bookDTO.setCoverImage(fileName);
-//        }
-//        BookDTO createdBook = bookService.createBook(bookDTO);
-//        return new ResponseEntity<>(createdBook, HttpStatus.CREATED);
-//    }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Create a new book", description = "Creates a new book in the system")
@@ -101,19 +87,28 @@ public class BookController {
     }
 
 
+
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Update book", description = "Updates an existing book")
     public ResponseEntity<BookDTO> updateBook(
             @PathVariable Long id,
-            @RequestPart("book") @Valid BookDTO bookDTO,
+            @RequestPart("book") @Valid String bookDataJson,
             @RequestPart(value = "coverImage", required = false) MultipartFile coverImage
-    ) {
-        if (coverImage != null) {
-            String fileName = fileStorageService.storeFile(coverImage);
-            bookDTO.setCoverImage(fileName);
+    ) throws JsonProcessingException {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            BookDTO bookDTO = mapper.readValue(bookDataJson, BookDTO.class);
+
+            if (coverImage != null && !coverImage.isEmpty()) {
+                String fileName = fileStorageService.storeFile(coverImage);
+                bookDTO.setCoverImage(fileName);
+            }
+
+            BookDTO updatedBook = bookService.updateBook(id, bookDTO);
+            return ResponseEntity.ok(updatedBook);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to update book", e);
         }
-        BookDTO updatedBook = bookService.updateBook(id, bookDTO);
-        return ResponseEntity.ok(updatedBook);
     }
 
 

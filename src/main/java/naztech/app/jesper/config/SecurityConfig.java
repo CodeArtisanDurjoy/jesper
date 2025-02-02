@@ -33,26 +33,10 @@ import java.util.Arrays;
 import java.util.List;
 
 
-//@Configuration
-//@EnableWebSecurity
-//public class SecurityConfig {
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
 //
-//  //  @Bean
-//  ///  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-////        http
-////                .csrf(csrf -> csrf.disable())  // Disable CSRF for API endpoints
-////                .authorizeHttpRequests(auth -> auth
-////                        .requestMatchers("/api/**").permitAll()
-////                        .anyRequest().authenticated()
-////                )
-////                .headers(headers -> headers
-////                        .frameOptions(frame -> frame.disable())
-////                );
-////
-////        return http.build();
-////    }
-////
-// //for more security CSRF
 //        @Bean
 //        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 //            http
@@ -86,32 +70,21 @@ import java.util.List;
 //            source.registerCorsConfiguration("/**", configuration);
 //            return source;
 //        }
-//}
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig {
+
+
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF
-                .csrf(csrf -> csrf.disable())
-
-                // Configure CORS
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // Configure authorization
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers("/api/**") // Disable CSRF for all API endpoints
+                )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/uploads/*").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()  // If you're using H2 console
-
+                        .requestMatchers("/api/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 )
-
-                // Allow frames for H2 console
-                .headers(headers -> headers.frameOptions().disable());
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return http.build();
     }
@@ -120,13 +93,14 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("*"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
 }
+
+
