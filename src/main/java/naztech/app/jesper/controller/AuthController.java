@@ -28,8 +28,12 @@ import naztech.app.jesper.dto.SignUpRequest;
 import naztech.app.jesper.config.JwtTokenProvider;
 import naztech.app.jesper.model.UserClient;
 import naztech.app.jesper.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -48,6 +52,8 @@ public class AuthController {
     private final JwtTokenProvider tokenProvider;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtTokenProvider tokenProvider,
@@ -62,21 +68,35 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest,
                                               HttpServletRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsername(),
-                        loginRequest.getPassword()
-                )
-        );
+        try {
+            logger.info("Attempting authentication for user: {}", loginRequest.getUsername());
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
+                    )
+            );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = tokenProvider.generateToken(authentication);
 
-        // Update machine IP
-        String machineIp = getClientIp(request);
-        userService.updateMachineIp(loginRequest.getUsername(), machineIp);
+            // Update machine IP
+            String machineIp = getClientIp(request);
+            userService.updateMachineIp(loginRequest.getUsername(), machineIp);
 
-        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
+            logger.info("Successfully authenticated user: {}", loginRequest.getUsername());
+
+
+            return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
+        } catch (BadCredentialsException e) {
+            logger.error("Authentication failed for user: {}", loginRequest.getUsername());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid username or password");
+        }catch (Exception e) {
+            logger.error("Authentication error", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred during authentication");
+        }
     }
 
     @PostMapping("/register")
@@ -94,6 +114,7 @@ public class AuthController {
         userClient.setUsername(signUpRequest.getUsername());
         userClient.setEmail(signUpRequest.getEmail());
         userClient.setPhone(signUpRequest.getPhone());
+
         userClient.setPasswordHash(passwordEncoder.encode(signUpRequest.getPassword()));
         userClient.setPublicId(UUID.randomUUID().toString());
         userClient.setMachineIp(getClientIp(request));
