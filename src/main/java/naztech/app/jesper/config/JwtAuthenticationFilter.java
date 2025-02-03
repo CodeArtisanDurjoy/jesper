@@ -20,6 +20,8 @@ package naztech.app.jesper.config;
  * ==============================================================
  */
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.web.filter.OncePerRequestFilter;
 import jakarta.servlet.FilterChain;
@@ -38,69 +40,55 @@ import java.io.IOException;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, @Lazy CustomUserDetailsService customUserDetailsService) {
-        this.jwtTokenProvider = jwtTokenProvider;
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider,
+                                   CustomUserDetailsService customUserDetailsService) {
+        this.jwtTokenProvider = tokenProvider;
         this.customUserDetailsService = customUserDetailsService;
     }
 
-//    @Override
-//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-//            throws ServletException, IOException {
-//        try {
-//            String jwt = getJwtFromRequest(request);
-//
-//            if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
-//                String username = jwtTokenProvider.getUsernameFromJWT(jwt);
-//                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-//
-//                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-//                        userDetails, null, userDetails.getAuthorities());
-//                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-//
-//                SecurityContextHolder.getContext().setAuthentication(authentication);
-//            }
-//        } catch (Exception ex) {
-//            logger.error("Could not set user authentication in security context", ex);
-//        }
-//
-//        filterChain.doFilter(request, response);
-//    }
-@Override
-protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-        throws ServletException, IOException {
-    try {
-        String jwt = getJwtFromRequest(request);
-        logger.info("JWT extracted: " + jwt); // Log the extracted token
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+        try {
+            String jwt = getJwtFromRequest(request);
+            logger.debug("Processing request for path: {}", request.getRequestURI());
 
-        if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
-            String username = jwtTokenProvider.getUsernameFromJWT(jwt);
-            logger.info("Username extracted from JWT: " + username);
+            if (StringUtils.hasText(jwt)) {
+                logger.info("JWT token found in request");
+                if (jwtTokenProvider.validateToken(jwt)) {
+                    String username = jwtTokenProvider.getUsernameFromJWT(jwt);
+                    logger.info("Valid JWT token for user: {}", username);
 
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-            logger.info("User roles: " + userDetails.getAuthorities());
+                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        } else {
-            logger.warn("JWT is missing or invalid.");
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.info("Successfully set authentication in SecurityContext");
+                } else {
+                    logger.warn("Invalid JWT token");
+                }
+            } else {
+                logger.debug("No JWT token found in request");
+            }
+        } catch (Exception ex) {
+            logger.error("Could not set user authentication in security context", ex);
         }
-    } catch (Exception ex) {
-        logger.error("Could not set user authentication in security context", ex);
+
+        filterChain.doFilter(request, response);
     }
-
-    filterChain.doFilter(request, response);
-}
-
 
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        logger.info("Authorization header: " + bearerToken); // Log the Authorization header
+        logger.debug("Authorization header: {}", bearerToken);
+
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
