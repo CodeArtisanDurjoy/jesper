@@ -45,22 +45,45 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.passwordEncoder = passwordEncoder;
     }
 
+//    @Override
+//    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+//        // First check admin users
+//        UserAdmin admin = userAdminRepository.findByUsername(username);
+//        if (admin != null) {
+//            return CustomUserDetails.fromUserAdmin(admin);
+//        }
+//
+//        // Then check client users
+//        UserClient client = userClientRepository.findByUsername(username);
+//        if (client != null) {
+//            return CustomUserDetails.fromUserClient(client);
+//        }
+//        throw new UsernameNotFoundException("User not found with username: " + username);
+//    }
+    // Add this helper method to encode passwords when creating/updating users
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // First check admin users
         UserAdmin admin = userAdminRepository.findByUsername(username);
         if (admin != null) {
+            if (admin.getPasswordHash() == null || !admin.getPasswordHash().startsWith("$2a$")) {
+                throw new UsernameNotFoundException("Invalid password hash for user: " + username);
+            }
             return CustomUserDetails.fromUserAdmin(admin);
         }
 
         // Then check client users
         UserClient client = userClientRepository.findByUsername(username);
         if (client != null) {
+            if (client.getPasswordHash() == null || !client.getPasswordHash().startsWith("$2a$")) {
+                throw new UsernameNotFoundException("Invalid password hash for user: " + username);
+            }
             return CustomUserDetails.fromUserClient(client);
         }
         throw new UsernameNotFoundException("User not found with username: " + username);
     }
-    // Add this helper method to encode passwords when creating/updating users
+
     public String encodePassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }
