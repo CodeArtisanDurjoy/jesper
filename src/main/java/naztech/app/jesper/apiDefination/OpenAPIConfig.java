@@ -51,7 +51,7 @@ import org.springframework.context.annotation.Configuration;
         ),
 servers = {
 @Server(url = "${api.server.url:http://localhost:9090}", description = "Local Server"),
-@Server(url = "${api.prod.server.url:https://api.bookreader.com}", description = "Production Server")
+@Server(url = "${api.prod.server.url:https://jesper-production.up.railway.app}", description = "Production Server")
         },
 externalDocs = @ExternalDocumentation(
         description = "More API Documentation",
