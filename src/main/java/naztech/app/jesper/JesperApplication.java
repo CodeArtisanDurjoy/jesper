@@ -14,6 +14,6 @@ public class JesperApplication  {
     }
     @GetMapping("/ok")
     public String hello(){
-        return "Hello World";
+        return "NAZTECH";
     }
 }
